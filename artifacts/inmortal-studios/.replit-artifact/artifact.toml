@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Inmortal Studios"
+description = "Plataforma comunitaria completa para desarrolladores de Roblox Studio y Studio Lite, con proyectos, perfiles, publicaciones, favoritos, verificación de Discord y administración."
+version = "1.0.0"
+id = "artifacts/inmortal-studios"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23273
+
+[services.development]
+run = "pnpm --filter @workspace/inmortal-studios run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/inmortal-studios", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/inmortal-studios/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23273"
+BASE_PATH = "/"

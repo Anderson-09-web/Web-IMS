@@ -1,0 +1,808 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Inmortal Studios community platform API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+  - name: discovery
+  - name: projects
+  - name: users
+  - name: verification
+  - name: roblox
+  - name: admin
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Returns server health
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /stats:
+    get:
+      operationId: getStats
+      tags: [discovery]
+      summary: Community statistics and featured content
+      responses:
+        "200":
+          description: Community overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stats"
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: Search and filter approved projects
+      parameters:
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/Category"
+        - $ref: "#/components/parameters/Compatibility"
+        - $ref: "#/components/parameters/ProjectType"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Project page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectList"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Submit a project for moderation
+      security:
+        - clerkSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectInput"
+      responses:
+        "201":
+          description: Project submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  /projects/{id}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get a project by id
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: Project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateProject
+      tags: [projects]
+      summary: Edit a project
+      security:
+        - clerkSession: []
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectUpdate"
+      responses:
+        "200":
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteProject
+      tags: [projects]
+      summary: Delete a project
+      security:
+        - clerkSession: []
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /projects/{id}/favorite:
+    post:
+      operationId: toggleFavorite
+      tags: [projects]
+      summary: Add or remove a favorite
+      security:
+        - clerkSession: []
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: Favorite state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FavoriteState"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /projects/{id}/report:
+    post:
+      operationId: reportProject
+      tags: [projects]
+      summary: Report a project
+      security:
+        - clerkSession: []
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportInput"
+      responses:
+        "201":
+          description: Report created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  /favorites:
+    get:
+      operationId: listFavorites
+      tags: [projects]
+      summary: List the signed-in user's favorite projects
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Favorite projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /creators:
+    get:
+      operationId: listCreators
+      tags: [discovery]
+      summary: Featured creators
+      parameters:
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Creator list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserProfile"
+  /users/me:
+    get:
+      operationId: getMe
+      tags: [users]
+      summary: Get the current platform profile
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Current profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    patch:
+      operationId: updateMe
+      tags: [users]
+      summary: Update the current profile
+      security:
+        - clerkSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /users/{username}:
+    get:
+      operationId: getUserProfile
+      tags: [users]
+      summary: Get a public profile by username
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Public profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /verification/discord/code:
+    post:
+      operationId: createDiscordVerification
+      tags: [verification]
+      summary: Create a short-lived Discord verification code
+      security:
+        - clerkSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscordIdentityInput"
+      responses:
+        "201":
+          description: Verification code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscordVerification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  /verification/discord/status:
+    get:
+      operationId: getDiscordVerificationStatus
+      tags: [verification]
+      summary: Get current Discord verification state
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Verification state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscordVerificationStatus"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /discord/verify:
+    post:
+      operationId: verifyDiscordFromBot
+      tags: [verification]
+      summary: Secure bot-to-backend verification callback
+      security:
+        - botApiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscordBotVerificationInput"
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscordBotVerificationResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /roblox/link:
+    post:
+      operationId: createRobloxLink
+      tags: [roblox]
+      summary: Create a public Roblox ownership challenge
+      security:
+        - clerkSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RobloxLinkInput"
+      responses:
+        "201":
+          description: Roblox challenge
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RobloxLink"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /roblox/link/confirm:
+    post:
+      operationId: confirmRobloxLink
+      tags: [roblox]
+      summary: Confirm a Roblox ownership challenge
+      security:
+        - clerkSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RobloxLinkConfirmInput"
+      responses:
+        "200":
+          description: Linked Roblox account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RobloxLink"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /admin/overview:
+    get:
+      operationId: getAdminOverview
+      tags: [admin]
+      summary: Moderation dashboard overview
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Admin overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOverview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/projects:
+    get:
+      operationId: listAdminProjects
+      tags: [admin]
+      summary: List projects for moderation
+      security:
+        - clerkSession: []
+      parameters:
+        - $ref: "#/components/parameters/ModerationStatus"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Moderation projects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectList"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/projects/{id}/moderate:
+    post:
+      operationId: moderateProject
+      tags: [admin]
+      summary: Approve or reject a project
+      security:
+        - clerkSession: []
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModerationInput"
+      responses:
+        "200":
+          description: Moderated project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /admin/reports:
+    get:
+      operationId: listReports
+      tags: [admin]
+      summary: List open content reports
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Report"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/status:
+    get:
+      operationId: getAdminStatus
+      tags: [admin]
+      summary: Check bot, API, and database status
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Service status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemStatus"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+components:
+  securitySchemes:
+    clerkSession:
+      type: apiKey
+      in: cookie
+      name: __session
+    botApiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+  parameters:
+    ProjectId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    Search:
+      name: search
+      in: query
+      schema:
+        type: string
+        maxLength: 80
+    Category:
+      name: category
+      in: query
+      schema:
+        type: string
+    Compatibility:
+      name: compatibility
+      in: query
+      schema:
+        $ref: "#/components/schemas/Compatibility"
+    ProjectType:
+      name: type
+      in: query
+      schema:
+        $ref: "#/components/schemas/ProjectType"
+    ModerationStatus:
+      name: status
+      in: query
+      schema:
+        $ref: "#/components/schemas/ModerationStatus"
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 12
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ValidationError:
+      description: Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        details:
+          type: ["string", "null"]
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+    Compatibility:
+      type: string
+      enum: [studio, lite, both]
+    ProjectType:
+      type: string
+      enum: [game, kit, script, map, system, resource, other]
+    ModerationStatus:
+      type: string
+      enum: [pending, approved, rejected, archived]
+    Project:
+      type: object
+      required: [id, name, description, type, category, compatibility, version, tags, views, status, createdAt, author]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        description: { type: string }
+        type: { $ref: "#/components/schemas/ProjectType" }
+        category: { type: string }
+        compatibility: { $ref: "#/components/schemas/Compatibility" }
+        version: { type: string }
+        thumbnailUrl: { type: ["string", "null"], format: uri }
+        robloxUrl: { type: ["string", "null"], format: uri }
+        downloadUrl: { type: ["string", "null"], format: uri }
+        discordUrl: { type: ["string", "null"], format: uri }
+        tiktokUrl: { type: ["string", "null"], format: uri }
+        tags:
+          type: array
+          items: { type: string }
+        views: { type: integer }
+        status: { $ref: "#/components/schemas/ModerationStatus" }
+        verified: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        author: { $ref: "#/components/schemas/UserProfile" }
+    ProjectInput:
+      type: object
+      required: [name, description, type, category, compatibility, version, tags]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 80 }
+        description: { type: string, minLength: 20, maxLength: 5000 }
+        type: { $ref: "#/components/schemas/ProjectType" }
+        category: { type: string, minLength: 2, maxLength: 50 }
+        compatibility: { $ref: "#/components/schemas/Compatibility" }
+        version: { type: string, maxLength: 30 }
+        thumbnailUrl: { type: ["string", "null"], format: uri }
+        robloxUrl: { type: ["string", "null"], format: uri }
+        downloadUrl: { type: ["string", "null"], format: uri }
+        discordUrl: { type: ["string", "null"], format: uri }
+        tiktokUrl: { type: ["string", "null"], format: uri }
+        tags:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items: { type: string, minLength: 1, maxLength: 24 }
+    ProjectUpdate:
+      allOf:
+        - $ref: "#/components/schemas/ProjectInput"
+    ProjectList:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Project" }
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+    UserProfile:
+      type: object
+      required: [id, username, discordName, discordVerified, robloxLinked, projectCount, joinedAt]
+      properties:
+        id: { type: string }
+        username: { type: string }
+        displayName: { type: string }
+        avatarUrl: { type: ["string", "null"], format: uri }
+        discordName: { type: ["string", "null"] }
+        discordVerified: { type: boolean }
+        robloxLinked: { type: boolean }
+        robloxUsername: { type: ["string", "null"] }
+        bio: { type: ["string", "null"] }
+        websiteUrl: { type: ["string", "null"], format: uri }
+        tiktokUrl: { type: ["string", "null"], format: uri }
+        projectCount: { type: integer }
+        kitCount: { type: integer }
+        gameCount: { type: integer }
+        resourceCount: { type: integer }
+        joinedAt: { type: string, format: date-time }
+    ProfileUpdate:
+      type: object
+      properties:
+        username: { type: string, minLength: 3, maxLength: 24 }
+        bio: { type: ["string", "null"], maxLength: 280 }
+        websiteUrl: { type: ["string", "null"], format: uri }
+        tiktokUrl: { type: ["string", "null"], format: uri }
+    Stats:
+      type: object
+      required: [projectCount, creatorCount, verifiedCount, totalViews, featured, recent, games, kits]
+      properties:
+        projectCount: { type: integer }
+        creatorCount: { type: integer }
+        verifiedCount: { type: integer }
+        totalViews: { type: integer }
+        featured:
+          type: array
+          items: { $ref: "#/components/schemas/Project" }
+        recent:
+          type: array
+          items: { $ref: "#/components/schemas/Project" }
+        games:
+          type: array
+          items: { $ref: "#/components/schemas/Project" }
+        kits:
+          type: array
+          items: { $ref: "#/components/schemas/Project" }
+    FavoriteState:
+      type: object
+      required: [favorited, favoriteCount]
+      properties:
+        favorited: { type: boolean }
+        favoriteCount: { type: integer }
+    ReportInput:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          enum: [spam, inappropriate, malicious, plagiarism, false_information, other]
+        details: { type: ["string", "null"], maxLength: 1000 }
+    Report:
+      type: object
+      required: [id, projectId, reason, status, createdAt]
+      properties:
+        id: { type: integer }
+        projectId: { type: integer }
+        reason: { type: string }
+        details: { type: ["string", "null"] }
+        status: { type: string, enum: [open, reviewing, resolved, dismissed] }
+        createdAt: { type: string, format: date-time }
+    DiscordIdentityInput:
+      type: object
+      required: [discordName, discordUserId]
+      properties:
+        discordName: { type: string, minLength: 2, maxLength: 64 }
+        discordUserId: { type: string, minLength: 10, maxLength: 24, pattern: "^[0-9]+$" }
+    DiscordVerification:
+      type: object
+      required: [code, expiresAt, discordName, discordUserId, used]
+      properties:
+        code: { type: string, pattern: "^IM-[A-Z0-9]{5}$" }
+        expiresAt: { type: string, format: date-time }
+        discordName: { type: string }
+        discordUserId: { type: string }
+        used: { type: boolean }
+    DiscordVerificationStatus:
+      type: object
+      required: [verified, botConnected, lastBotCommunication]
+      properties:
+        verified: { type: boolean }
+        discordName: { type: ["string", "null"] }
+        discordUserId: { type: ["string", "null"] }
+        botConnected: { type: boolean }
+        lastBotCommunication: { type: ["string", "null"], format: date-time }
+    DiscordBotVerificationInput:
+      type: object
+      required: [discordUserId, code]
+      properties:
+        discordUserId: { type: string, pattern: "^[0-9]+$" }
+        code: { type: string, pattern: "^IM-[A-Z0-9]{5}$" }
+    DiscordBotVerificationResult:
+      type: object
+      required: [verified, message]
+      properties:
+        verified: { type: boolean }
+        message: { type: string }
+        username: { type: ["string", "null"] }
+    RobloxLinkInput:
+      type: object
+      required: [robloxUsername]
+      properties:
+        robloxUsername: { type: string, minLength: 3, maxLength: 20 }
+    RobloxLinkConfirmInput:
+      type: object
+      required: [challengeCode, robloxUserId, robloxUsername, displayName, avatarUrl]
+      properties:
+        challengeCode: { type: string, pattern: "^RBX-[0-9]{5}$" }
+        robloxUserId: { type: string, pattern: "^[0-9]+$" }
+        robloxUsername: { type: string, minLength: 3, maxLength: 20 }
+        displayName: { type: string, minLength: 1, maxLength: 40 }
+        avatarUrl: { type: string, format: uri }
+    RobloxLink:
+      type: object
+      required: [challengeCode, robloxUserId, robloxUsername, displayName, avatarUrl, linked, expiresAt]
+      properties:
+        challengeCode: { type: string, pattern: "^RBX-[0-9]{5}$" }
+        robloxUserId: { type: string }
+        robloxUsername: { type: string }
+        displayName: { type: string }
+        avatarUrl: { type: string, format: uri }
+        linked: { type: boolean }
+        expiresAt: { type: string, format: date-time }
+    AdminOverview:
+      type: object
+      required: [pendingProjects, openReports, totalUsers, verifiedUsers, systemStatus]
+      properties:
+        pendingProjects: { type: integer }
+        openReports: { type: integer }
+        totalUsers: { type: integer }
+        verifiedUsers: { type: integer }
+        systemStatus: { $ref: "#/components/schemas/SystemStatus" }
+    ModerationInput:
+      type: object
+      required: [status]
+      properties:
+        status: { $ref: "#/components/schemas/ModerationStatus" }
+        note: { type: ["string", "null"], maxLength: 500 }
+    SystemStatus:
+      type: object
+      required: [bot, api, database, lastBotCommunication]
+      properties:
+        bot: { type: string, enum: [connected, disconnected, unconfigured] }
+        api: { type: string, enum: [connected, degraded] }
+        database: { type: string, enum: [connected, degraded] }
+        lastBotCommunication: { type: ["string", "null"], format: date-time }
